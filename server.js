@@ -28,13 +28,14 @@ app.use(cors({
   allowedHeaders: ['Content-Type', 'Authorization']
 }));
 
-app.options('*', cors());
 app.use(express.json());
-app.use(express.static("../frontend"));
+app.options('*', cors());
 
 app.use('/api/auth', authRoutes);
 app.use('/api/quiz', quizRoutes);
 app.use('/api/admin', adminRoutes);
+
+app.use(express.static("../frontend"));
 
 // Broadcast leaderboard
 app.get('/api/leaderboard', (req, res) => {
