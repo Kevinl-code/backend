@@ -2,40 +2,53 @@ const express = require("express");
 const router = express.Router();
 const Violation = require("../models/Violation");
 
-// ============================
-// GET QUIZ QUESTIONS
-// ============================
-router.get("/questions", async (req, res) => {
-  res.json([
-    {
-      question: "What is 2 + 2?",
-      options: ["1", "2", "3", "4"]
-    },
-    {
-      question: "Capital of India?",
-      options: ["Delhi", "Mumbai", "Chennai", "Kolkata"]
-    }
-  ]);
+// TEMP quiz store (later from CSV / DB)
+const QUESTIONS = [
+  {
+    id: 1,
+    question: "What is 2 + 2?",
+    options: ["1", "2", "3", "4"],
+    correctAnswer: "4",
+    marks: 1
+  },
+  {
+    id: 2,
+    question: "Capital of India?",
+    options: ["Delhi", "Mumbai", "Chennai", "Kolkata"],
+    correctAnswer: "Delhi",
+    marks: 1
+  }
+];
+
+// SEND QUESTIONS (NO ANSWERS)
+router.get("/questions", (req, res) => {
+  res.json(
+    QUESTIONS.map(q => ({
+      id: q.id,
+      question: q.question,
+      options: q.options,
+      marks: q.marks
+    }))
+  );
 });
 
-// ============================
-// LOG VIOLATIONS
-// ============================
-router.post("/violation", async (req, res) => {
-  const { userId, type } = req.body;
+// SUBMIT QUIZ
+router.post("/submit", async (req, res) => {
+  const { answers, timePerQuestion, totalTime } = req.body;
 
-  const count = await Violation.countDocuments({ userId });
-  const disqualify = count >= 3;
+  let score = 0;
 
-  await Violation.create({
-    userId,
-    type,
-    autoDisqualified: disqualify
+  QUESTIONS.forEach(q => {
+    if (answers[q.id] === q.correctAnswer) {
+      score += q.marks;
+    }
   });
 
   res.json({
-    status: "logged",
-    disqualified: disqualify
+    score,
+    totalQuestions: QUESTIONS.length,
+    totalTime,
+    timePerQuestion
   });
 });
 
