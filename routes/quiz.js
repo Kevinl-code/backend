@@ -1,54 +1,75 @@
 const express = require("express");
 const router = express.Router();
+
+const Question = require("../models/Question");
+const Attempt = require("../models/Attempt");
 const Violation = require("../models/Violation");
 
-// TEMP quiz store (later from CSV / DB)
-const QUESTIONS = [
-  {
-    id: 1,
-    question: "What is 2 + 2?",
-    options: ["1", "2", "3", "4"],
-    correctAnswer: "4",
-    marks: 1
-  },
-  {
-    id: 2,
-    question: "Capital of India?",
-    options: ["Delhi", "Mumbai", "Chennai", "Kolkata"],
-    correctAnswer: "Delhi",
-    marks: 1
-  }
-];
+/* ======================================================
+   GET QUESTIONS (NO CORRECT ANSWERS SENT)
+====================================================== */
+router.get("/questions", async (req, res) => {
+  const questions = await Question.find({}, {
+    correctAnswer: 0,
+    __v: 0
+  });
 
-// SEND QUESTIONS (NO ANSWERS)
-router.get("/questions", (req, res) => {
-  res.json(
-    QUESTIONS.map(q => ({
-      id: q.id,
-      question: q.question,
-      options: q.options,
-      marks: q.marks
-    }))
-  );
+  res.json(questions);
 });
 
-// SUBMIT QUIZ
+/* ======================================================
+   SUBMIT QUIZ + SCORE + LOG ATTEMPT
+====================================================== */
 router.post("/submit", async (req, res) => {
-  const { answers, timePerQuestion, totalTime } = req.body;
+  const {
+    userId,
+    name,
+    answers,           // { questionId: selectedOption }
+    timePerQuestion,   // { questionId: seconds }
+    totalTime
+  } = req.body;
 
+  const questions = await Question.find();
   let score = 0;
 
-  QUESTIONS.forEach(q => {
-    if (answers[q.id] === q.correctAnswer) {
+  questions.forEach(q => {
+    if (answers[q._id] === q.correctAnswer) {
       score += q.marks;
     }
   });
 
-  res.json({
+  /* ===== VIOLATION DATA ===== */
+  const violations = await Violation.countDocuments({ userId });
+  const violationDocs = await Violation.find({ userId });
+
+  const violationTypes = violationDocs.map(v => v.type);
+
+  /* ===== RANK SCORE LOGIC ===== */
+  const rankScore =
+    score * 100 -
+    violations * 50 -
+    totalTime;
+
+  /* ===== SAVE ATTEMPT ===== */
+  await Attempt.create({
+    userId,
+    name,
+    loginTime: new Date(Date.now() - totalTime * 1000),
+    submitTime: new Date(),
     score,
-    totalQuestions: QUESTIONS.length,
     totalTime,
-    timePerQuestion
+    timePerQuestion,
+    violations,
+    violationTypes,
+    rankScore
+  });
+
+  res.json({
+    success: true,
+    score,
+    totalQuestions: questions.length,
+    totalTime,
+    violations
   });
 });
 
