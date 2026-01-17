@@ -22,6 +22,9 @@ io.on('connection', (socket) => {
   socket.on('disconnect', () => console.log('Client disconnected:', socket.id));
 });
 
+/* =========================
+   CORS (ANDROID SAFE)
+========================= */
 app.use(cors({
   origin: '*',
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
@@ -29,13 +32,29 @@ app.use(cors({
 }));
 
 app.use(express.json());
-app.options('*', cors());
 
+/* =========================
+   🔴 REQUIRED FIX
+   Handle OPTIONS early
+========================= */
+app.use((req, res, next) => {
+  if (req.method === 'OPTIONS') {
+    return res.sendStatus(200);
+  }
+  next();
+});
+
+/* =========================
+   API ROUTES
+========================= */
 app.use('/api/auth', authRoutes);
 app.use('/api/quiz', quizRoutes);
 app.use('/api/admin', adminRoutes);
 
-app.use(express.static("../frontend"));
+/* =========================
+   STATIC FILES (LAST)
+========================= */
+app.use(express.static('../frontend'));
 
 // Broadcast leaderboard
 app.get('/api/leaderboard', (req, res) => {
@@ -44,4 +63,6 @@ app.get('/api/leaderboard', (req, res) => {
 });
 
 const PORT = process.env.PORT || 3000;
-server.listen(PORT, () => console.log(`✅ Server running on port ${PORT}`));
+server.listen(PORT, () =>
+  console.log(`✅ Server running on port ${PORT}`)
+);
