@@ -6,6 +6,8 @@ const connectDB = require('./config/db');
 const authRoutes = require('./routes/auth');
 const quizRoutes = require('./routes/quiz');
 const adminRoutes = require('./routes/admin');
+const violationRoutes = require('./routes/violation');
+
 
 connectDB();
 
@@ -15,6 +17,8 @@ const server = http.createServer(app);
 const io = new Server(server, {
   cors: { origin: "*" },
 });
+app.set("io", io);
+
 
 // Socket.IO for live leaderboard
 io.on('connection', (socket) => {
@@ -50,6 +54,8 @@ app.use((req, res, next) => {
 app.use('/api/auth', authRoutes);
 app.use('/api/quiz', quizRoutes);
 app.use('/api/admin', adminRoutes);
+app.use('/api/violation', violationRoutes);
+
 
 /* =========================
    STATIC FILES (LAST)
