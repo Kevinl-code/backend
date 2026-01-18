@@ -39,30 +39,31 @@ router.post("/submit", async (req, res) => {
   });
 
   /* ===== VIOLATION DATA ===== */
-  const violations = await Violation.countDocuments({ userId });
-  const violationDocs = await Violation.find({ userId });
+   const violationDocs = await Violation.find({ userId });
+   const violations = violationDocs.length;
+   const violationTypes = violationDocs.map(v => v.type);
 
-  const violationTypes = violationDocs.map(v => v.type);
+/* ===== AUTO DISQUALIFY ===== */
+   const autoDisqualified = violations >= 3;
 
-  /* ===== RANK SCORE LOGIC ===== */
-  const rankScore =
-    score * 100 -
-    violations * 50 -
-    totalTime;
+/* ===== RANK SCORE ===== */
+   const rankScore = autoDisqualified
+     ? -9999
+     : score * 100 - violations * 50 - totalTime;
 
-  /* ===== SAVE ATTEMPT ===== */
-  await Attempt.create({
-    userId,
-    name,
-    loginTime: new Date(Date.now() - totalTime * 1000),
-    submitTime: new Date(),
-    score,
-    totalTime,
-    timePerQuestion,
-    violations,
-    violationTypes,
-    rankScore
-  });
+/* ===== SAVE ATTEMPT ===== */
+   await Attempt.create({
+     userId,
+     name,
+     loginTime: new Date(Date.now() - totalTime * 1000),
+     submitTime: new Date(),
+     score,
+     totalTime,
+     timePerQuestion,
+     violations,
+     violationTypes,
+     rankScore
+   });
 
   res.json({
     success: true,
@@ -74,3 +75,4 @@ router.post("/submit", async (req, res) => {
 });
 
 module.exports = router;
+
