@@ -8,9 +8,10 @@ const AttemptSchema = new mongoose.Schema({
   score: Number,
   totalTime: Number,
   timePerQuestion: Object,
-  violations: Number,
-  violationTypes: [String],
+  violations: { type: Number, default: 0 },
+  violationTypes: { type: [String], default: [] },
   rankScore: Number
 });
 
 module.exports = mongoose.model("Attempt", AttemptSchema);
+
