@@ -3,11 +3,11 @@ const cors = require('cors');
 const http = require('http');
 const { Server } = require('socket.io');
 const connectDB = require('./config/db');
+
 const authRoutes = require('./routes/auth');
 const quizRoutes = require('./routes/quiz');
 const adminRoutes = require('./routes/admin');
-const violationRoutes = require('./routes/violation');
-
+const violationRoutes = require('./routes/violation'); // ✅ ADD
 
 connectDB();
 
@@ -17,13 +17,16 @@ const server = http.createServer(app);
 const io = new Server(server, {
   cors: { origin: "*" },
 });
+
+// ✅ MAKE SOCKET AVAILABLE EVERYWHERE
 app.set("io", io);
 
-
-// Socket.IO for live leaderboard
+// Socket.IO base
 io.on('connection', (socket) => {
   console.log('⚡ New client connected:', socket.id);
-  socket.on('disconnect', () => console.log('Client disconnected:', socket.id));
+  socket.on('disconnect', () =>
+    console.log('Client disconnected:', socket.id)
+  );
 });
 
 /* =========================
@@ -38,8 +41,7 @@ app.use(cors({
 app.use(express.json());
 
 /* =========================
-   🔴 REQUIRED FIX
-   Handle OPTIONS early
+   HANDLE OPTIONS
 ========================= */
 app.use((req, res, next) => {
   if (req.method === 'OPTIONS') {
@@ -54,15 +56,16 @@ app.use((req, res, next) => {
 app.use('/api/auth', authRoutes);
 app.use('/api/quiz', quizRoutes);
 app.use('/api/admin', adminRoutes);
-app.use('/api/violation', violationRoutes);
-
+app.use('/api/violation', violationRoutes); // ✅ ADD
 
 /* =========================
-   STATIC FILES (LAST)
+   STATIC FILES
 ========================= */
 app.use(express.static('../frontend'));
 
-// Broadcast leaderboard
+/* =========================
+   LEADERBOARD BROADCAST
+========================= */
 app.get('/api/leaderboard', (req, res) => {
   io.emit('updateLeaderboard');
   res.json({ message: 'Leaderboard updated' });
