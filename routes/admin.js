@@ -3,20 +3,36 @@ const router = express.Router();
 const multer = require("multer");
 const csv = require("csv-parser");
 const fs = require("fs");
+const path = require("path");
 
 const Question = require("../models/Question");
 const Attempt = require("../models/Attempt");
 
 /* ===========================
+   ENSURE UPLOADS FOLDER
+=========================== */
+const uploadDir = path.join(__dirname, "..", "uploads");
+if (!fs.existsSync(uploadDir)) {
+  fs.mkdirSync(uploadDir);
+}
+
+/* ===========================
    CSV UPLOAD CONFIG
 =========================== */
-const upload = multer({ dest: "uploads/" });
+const upload = multer({
+  dest: uploadDir
+});
 
 /* ===========================
    1️⃣ UPLOAD QUESTIONS CSV
+   field name MUST be "csv"
 =========================== */
-router.post("/upload-questions", upload.single("file"), async (req, res) => {
+router.post("/upload-questions", upload.single("csv"), async (req, res) => {
   try {
+    if (!req.file) {
+      return res.status(400).json({ error: "No CSV file uploaded" });
+    }
+
     const questions = [];
 
     fs.createReadStream(req.file.path)
@@ -42,8 +58,8 @@ router.post("/upload-questions", upload.single("file"), async (req, res) => {
 
         res.json({
           success: true,
-          message: "Questions uploaded",
-          count: questions.length
+          message: "Questions uploaded successfully",
+          totalQuestions: questions.length
         });
       });
 
