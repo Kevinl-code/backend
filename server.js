@@ -2,8 +2,8 @@ const express = require('express');
 const cors = require('cors');
 const http = require('http');
 const { Server } = require('socket.io');
-const connectDB = require('./config/db');
 
+const connectDB = require('./config/db');
 const authRoutes = require('./routes/auth');
 const quizRoutes = require('./routes/quiz');
 const adminRoutes = require('./routes/admin');
@@ -18,20 +18,16 @@ const io = new Server(server, {
   cors: { origin: "*" },
 });
 
-// ✅ MAKE SOCKET AVAILABLE EVERYWHERE
+// ✅ MAKE IO AVAILABLE EVERYWHERE
 app.set("io", io);
 
-// Socket.IO base
 io.on('connection', (socket) => {
-  console.log('⚡ New client connected:', socket.id);
+  console.log('⚡ Client connected:', socket.id);
   socket.on('disconnect', () =>
     console.log('Client disconnected:', socket.id)
   );
 });
 
-/* =========================
-   CORS (ANDROID SAFE)
-========================= */
 app.use(cors({
   origin: '*',
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
@@ -40,13 +36,8 @@ app.use(cors({
 
 app.use(express.json());
 
-/* =========================
-   HANDLE OPTIONS
-========================= */
 app.use((req, res, next) => {
-  if (req.method === 'OPTIONS') {
-    return res.sendStatus(200);
-  }
+  if (req.method === 'OPTIONS') return res.sendStatus(200);
   next();
 });
 
@@ -58,18 +49,7 @@ app.use('/api/quiz', quizRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/violation', violationRoutes); // ✅ ADD
 
-/* =========================
-   STATIC FILES
-========================= */
 app.use(express.static('../frontend'));
-
-/* =========================
-   LEADERBOARD BROADCAST
-========================= */
-app.get('/api/leaderboard', (req, res) => {
-  io.emit('updateLeaderboard');
-  res.json({ message: 'Leaderboard updated' });
-});
 
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, () =>
